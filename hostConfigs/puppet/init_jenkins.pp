@@ -3,18 +3,18 @@ class jenkins {
 
     # get key
     exec { 'install_jenkins_key':
-        command => '/usr/bin/curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null',
+        command => "curl -fsSL https://pkg.jenkins.io/debian/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null",
+        path => "/usr/bin:/usr/sbin:/bin"
     }
 
-    # source file
+        # source file
     file { '/etc/apt/sources.list.d/jenkins.list':
-        ensure  => present,
-        content => "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/\n",
+        content => "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/\n",
         mode    => '0644',
         owner   => root,
         group   => root,
         require => Exec['install_jenkins_key'],
-    }
+    } 
 
     # update
     exec { 'apt-get update':
