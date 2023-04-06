@@ -1,4 +1,3 @@
-#
 class jenkins {
 
     # get key
@@ -14,42 +13,28 @@ class jenkins {
         owner   => root,
         group   => root,
         require => Exec['install_jenkins_key'],
-    } 
-
+    } #ordeno la secuencia de pasos en el tiempo mediante el operador "->".
+    # se utiliza para encadenar semanticamente distintas declaraciones
     # update
-    exec { 'apt-get update':
+    -> exec { 'apt-get update':
         command => '/usr/bin/apt-get update',
     }
 
     #install jenkins
     $enhancers = [ 'openjdk-11-jre', 'jenkins' ]
 
-    # jenkins package
     package { $enhancers:
-        ensure  => installed,
-        require => [
-            File['/etc/apt/sources.list.d/jenkins.list'],
-            Exec['apt-get update']
-        ]
-    } -> exec { 'replace_jenkins_port': #Reemplazo el puerto de jenkins para que este escuchando en el 8082
+        ensure => 'installed',
+    } #Reemplazo el puerto de jenkins para que este escuchando en el 8082
+    -> exec { 'replace_jenkins_port':
         command => "/bin/sed -i -- 's/JENKINS_PORT=8080/JENKINS_PORT=8082/g' /lib/systemd/system/jenkins.service",
-
-    } -> exec { 'reload': # Notifico al gestor de servicios que un archivo cambio
-        command => '/bin/systemctl restart jenkins',
-        path    => '/usr/bin:/usr/sbin:/bin',
-        unless  => 'netstat -pant |grep LISTEN |grep 8082 | awk  \'{print $7}\'',
+    } -> exec { 'reload-systemctl':
+        command => '/bin/systemctl daemon-reload',
+        notify  => Service['jenkins'],
     }
 
+    # aseguro que el servicio de jenkins este activo
     service { 'jenkins':
-        ensure => running,
-        enable => true,
+        ensure  => running,
     }
-
-    user { 'jenkins':
-        ensure   => present,
-        password => '$1$hrl1RNSP$DoKnhDdeCLlW.QJGLY8dj1',
-        home     => '/var/lib/jenkins',
-        shell    => '/bin/bash',
-    }
-
 }
